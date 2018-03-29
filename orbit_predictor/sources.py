@@ -95,8 +95,18 @@ class MemoryTLESource(TLESource):
 
 
 class EtcTLESource(TLESource):
-    def __init__(self, filename="/etc/latest_tle"):
-        self.filename = filename
+    def __init__(self, filename=None):
+        self.sate_list = {}
+        if filename is not None:
+            self.load_file(filename)
+
+    def load_file(self, filename):
+        with open(filename) as fd:
+            lines = fd.readlines()
+        lines = [l.strip() for l in lines]
+        for i, l in enumerate(lines):
+            if i % 3 == 0 and l:
+                self.sate_list[l] = lines[i+1:i+3]
 
     def add_tle(self, sate_id, tle, epoch):
         with open(self.filename, "w") as fd:
@@ -105,12 +115,13 @@ class EtcTLESource(TLESource):
                 fd.write(l + "\n")
 
     def _get_tle(self, sate_id, date):
-        with open(self.filename) as fd:
-            data = fd.read()
-            lines = data.split("\n")
-            if not lines[0] == sate_id:
-                raise LookupError("Stored satellite id not")
-            return tuple(lines[1:3])
+        if not sate_id in self.sate_list:
+            raise LookupError("Stored satellite id not")
+        return tuple(self.sate_list[sate_id])
+
+    def satellite_list(self):
+        for i in self.sate_list:
+            yield i
 
 
 class WSTLESource(TLESource):
