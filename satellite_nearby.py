@@ -44,8 +44,10 @@ def llh_to_altaz(loc1, loc2, radian=False):
     a = 6378.1370
     b = 6356.752314
     # earth radius
-    n1 = a * a / np.sqrt(a * a * np.cos(loc1_llh[0]) ** 2 + b ** 2 * np.sin(loc1_llh[0]) ** 2)
-    n2 = a * a / np.sqrt(a * a * np.cos(loc2_llh[0]) ** 2 + b ** 2 * np.sin(loc2_llh[0]) ** 2)
+    loc1_lat = loc1_llh[0] * np.pi / 180
+    loc2_lat = loc2_llh[0] * np.pi / 180
+    n1 = a * a / np.sqrt(a * a * np.cos(loc1_lat) ** 2 + b ** 2 * np.sin(loc1_lat) ** 2)
+    n2 = a * a / np.sqrt(a * a * np.cos(loc2_lat) ** 2 + b ** 2 * np.sin(loc2_lat) ** 2)
     dist = np.sqrt((loc1_xyz[0] - loc2_xyz[0])**2 + (loc1_xyz[1] - loc2_xyz[1])**2 + (loc1_xyz[2] - loc2_xyz[2])**2)\
     # cosA = (b^2 + c^2 - a^2) / 2bc
     cosalt = ((n2 + loc2_llh[2])**2 + dist**2 - (n1 + loc1_llh[2])**2) / (2 * (n2 + loc2_llh[2]) * dist)
@@ -81,6 +83,7 @@ def plot_orbit(ax, predictor, start_time, delta=datetime.timedelta(seconds=60), 
         else:
             x.append(loc[0])
             y.append(loc[1])
+        print(position.position_llh[0] - BNL_LOC.position_llh[0])
 
     ax.plot(x, y, label=predictor.sate_id)
 
@@ -111,11 +114,12 @@ plt.savefig("satellite_plot.png", bbox_extra_artists=(lgd,), bbox_inches='tight'
 plt.clf()
 ax = plt.subplot(111, projection='polar')
 for sate_id in sources.satellite_list():
-    predictor = sources.get_predictor(sate_id, True)
+    predictor = sources.get_predictor(sate_id)
     min_distance, min_time = nearest_distance(predictor, BNL_LOC)
     if min_distance < 10:
         print(sate_id, min_distance, predictor.get_position(min_time).position_llh)
         plot_orbit(ax, predictor, min_time - datetime.timedelta(seconds=1800), polar=True)
+
 
 ax.plot(0, 0, marker='o', markersize=5, color='red', label="BMX")
 plt.title("GPS satellites passed over BMX")
