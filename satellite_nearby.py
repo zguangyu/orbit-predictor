@@ -44,15 +44,19 @@ def llh_to_altaz(loc1, loc2, radian=False):
     a = 6378.1370
     b = 6356.752314
     # earth radius
-    loc1_lat = loc1_llh[0] * np.pi / 180
-    loc2_lat = loc2_llh[0] * np.pi / 180
-    n1 = a * a / np.sqrt(a * a * np.cos(loc1_lat) ** 2 + b ** 2 * np.sin(loc1_lat) ** 2)
-    n2 = a * a / np.sqrt(a * a * np.cos(loc2_lat) ** 2 + b ** 2 * np.sin(loc2_lat) ** 2)
+    n1 = np.sqrt(loc1_xyz[0]**2 + loc1_xyz[1]**2 + loc1_xyz[2]**2)
+    n2 = np.sqrt(loc2_xyz[0]**2 + loc2_xyz[1]**2 + loc2_xyz[2]**2)
     dist = np.sqrt((loc1_xyz[0] - loc2_xyz[0])**2 + (loc1_xyz[1] - loc2_xyz[1])**2 + (loc1_xyz[2] - loc2_xyz[2])**2)\
     # cosA = (b^2 + c^2 - a^2) / 2bc
-    cosalt = ((n2 + loc2_llh[2])**2 + dist**2 - (n1 + loc1_llh[2])**2) / (2 * (n2 + loc2_llh[2]) * dist)
+    cosalt_center = (n2**2 + dist**2 - n1**2) / (2 * n2 * dist)
     #print(cosalt, n1+loc1_llh[2], n2+loc2_llh[2], dist)
-    alt = (np.arccos(cosalt) - 0.5 * np.pi) * coeff
+    alt_center = np.pi - np.arccos(cosalt_center)
+
+    lat2_center = np.arctan(loc2_xyz[2] / np.sqrt(loc2_xyz[0]**2 + loc2_xyz[1]**2))
+    lat2_corr = loc2_llh[0] / 180 * np.pi - lat2_center
+
+    alt = (0.5*np.pi - (alt_center + lat2_corr)) * coeff
+    print(alt, lat2_corr)
 
     return alt, az
 
@@ -83,7 +87,6 @@ def plot_orbit(ax, predictor, start_time, delta=datetime.timedelta(seconds=60), 
         else:
             x.append(loc[0])
             y.append(loc[1])
-        print(position.position_llh[0] - BNL_LOC.position_llh[0])
 
     ax.plot(x, y, label=predictor.sate_id)
 
