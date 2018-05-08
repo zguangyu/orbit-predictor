@@ -81,9 +81,10 @@ def plot_orbit(ax, predictor, start_time, delta=datetime.timedelta(seconds=60), 
         position = predictor.get_position(curr_time)
         loc = position.position_llh[0:2]
         if polar:
-            altaz = llh_to_altaz(position, BNL_LOC, radian=True)
-            x.append(altaz[1])
-            y.append((0.5*np.pi - altaz[0]) * 180 / np.pi)
+            #altaz = llh_to_altaz(position, BNL_LOC, radian=True)
+            az, alt = BNL_LOC.get_azimuth_elev(position)
+            x.append(az)
+            y.append((0.5*np.pi - alt) * 180 / np.pi)
         else:
             x.append(loc[0])
             y.append(loc[1])
@@ -98,12 +99,12 @@ for i in glob("gps/*.txt"):
 
 
 ax = plt.subplot(111)
-print("# Satellite ID, min distance, (satellite lon, lat, height)")
+print("# Satellite ID, min distance, min time, (satellite lat, lon, height)")
 for sate_id in sources.satellite_list():
     predictor = sources.get_predictor(sate_id, True)
-    min_distance, min_time = nearest_distance(predictor, BNL_LOC)
+    min_distance, min_time = nearest_distance(predictor, BNL_LOC, start_time=datetime.datetime(2018, 4, 2, 0, 0, 0))
     if min_distance < 10:
-        print(sate_id, min_distance, predictor.get_position(min_time).position_llh)
+        print(sate_id, ",", min_distance, ",", min_time)
         plot_orbit(ax, predictor, min_time - datetime.timedelta(seconds=1800))
 
 plt.plot(BNL_LOC.position_llh[0], BNL_LOC.position_llh[1], marker='o', markersize=5, color='red', label="BMX")
@@ -116,11 +117,13 @@ plt.savefig("satellite_plot.png", bbox_extra_artists=(lgd,), bbox_inches='tight'
 
 plt.clf()
 ax = plt.subplot(111, projection='polar')
+ax.set_theta_zero_location("N")
+ax.set_theta_direction(-1)
 for sate_id in sources.satellite_list():
     predictor = sources.get_predictor(sate_id)
     min_distance, min_time = nearest_distance(predictor, BNL_LOC)
     if min_distance < 10:
-        print(sate_id, min_distance, predictor.get_position(min_time).position_llh)
+        #print(sate_id, min_distance, predictor.get_position(min_time).position_llh)
         plot_orbit(ax, predictor, min_time - datetime.timedelta(seconds=1800), polar=True)
 
 
